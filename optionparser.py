@@ -119,6 +119,7 @@ class OptionParser:
     def add (self, option):
         """Add an option to be parsed."""
         self.options.append (option)
+        return option
 
     def has (self, query):
         """Internal method for querying what we have in the options list"""

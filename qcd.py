@@ -27,13 +27,14 @@ import tabularize
 
 # Global configuration parameters
 name = "qcd"
+options = dict()
 default_db_file = "~/." + name + "db"
 
 
 # Wrappers for managing the database
 
 def initialize_database (writeable = False):
-    file = expanduser (file_option.value)
+    file = expanduser ( options["dbfile"].value )
 
     if not writeable and not isfile(file):
         print >> sys.stderr, "Database is empty! Try adding something!"
@@ -164,49 +165,55 @@ def get (args):
     close_database (db)
 
 
-# The command line parser
-parser = OptionParser (name)
+# Setting up qcd command line interface
+def createQcdCmdLineParser():
+    # The command line parser
+    cmdParser = OptionParser (name)
 
-# The options
-file_option = Configuration ("f", "file", "Specifies which database to use",
-        default_db_file, syntax = "FILENAME")
-parser.add (file_option)
+    # The options
+    options["dbfile"] = cmdParser.add ( Configuration ("f", "file", 
+                                       "Specifies which database to use",
+                                       default_db_file, syntax = "FILENAME") )
+    # The commands
+    options["help"] = cmdParser.add ( Command ("h", "help", 
+                                       "Prints this helpful message", 
+                                       lambda args:cmdParser.usage ()) )
 
-# The commands
-help_command = Command ("h", "help", "Prints this helpful message",
-        lambda args:parser.usage ())
-parser.add (help_command)
+    options["add"] = cmdParser.add( Command ("a", "add", 
+                                     "Add a new entry into the database", 
+                                     add, syntax = "[LABEL] PATH") )
 
-add_command = Command ("a", "add", "Add a new entry into the database", add,
-        syntax = "[LABEL] PATH")
-parser.add (add_command)
+    options["save"] = cmdParser.add( Command ("s", "save", 
+                                      "Add current path into the database", 
+                                      save, syntax = "[LABEL]") )
 
-save_command = Command ("s", "save", "Add current path into the database",
-        save, syntax = "[LABEL]")
-parser.add (save_command)
+    options["move"] = cmdParser.add( Command ("m", "move", 
+                                      "Rename an entry in the database", 
+                                      move, syntax = "FROM TO") )
 
-move_command = Command ("m", "move", "Rename an entry in the database", move,
-        syntax = "FROM TO")
-parser.add (move_command)
+    options["change"] = cmdParser.add( Command ("c", "change", 
+                                        "Changes the path of an entry in the database", 
+                                        change, syntax = "LABEL NEW_PATH") )
 
-change_command = Command ("c", "change",
-    "Changes the path of an entry in the database", change,
-    syntax = "LABEL NEW_PATH")
-parser.add (change_command)
+    options["delete"] = cmdParser.add( Command ("d", "delete", 
+                                        "Delete an entry from the database", 
+                                        delete, syntax = "LABEL") )
 
-delete_command = Command ("d", "delete", "Delete an entry from the database",
-        delete, syntax = "LABEL")
-parser.add (delete_command)
+    options["list"] = cmdParser.add( Command ("l", "list", 
+                                      "List the entries in the database", 
+                                      list) )
 
-list_command = Command ("l", "list", "List the entries in the database", list)
-parser.add (list_command)
-
-retrieve_command = Command ("g", "get", "Retrieve an entry from the database",
-        get, True, syntax = "LABEL")
-parser.add (retrieve_command)
+    options["retrieve"] = cmdParser.add( Command ("g", "get", 
+                                          "Retrieve an entry from the database",
+                                          get, True, syntax = "LABEL") )
+    return cmdParser
 
 
-# Parse it!
+# main
+if ( __name__ == "__main__" ):
+    # Create a Command Line Parser
+    qcdCmdParser = createQcdCmdLineParser()
 
-parser.parse ()
-
+    # Parse it!
+    qcdCmdParser.parse ()
+    
