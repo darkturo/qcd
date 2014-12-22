@@ -82,6 +82,8 @@ def close_database (db):
 # Helpers
 
 def getAnonymousKey (db):
+    # When using anonymous entries, qcd will find out number N, that has not
+    # been used already as a key, to index the value in the db.
     i = 1;
     while True:
         if not str(i) in db:
@@ -108,8 +110,7 @@ def add (syntaxError, args):
     db = initialize_database (True)
 
     if len (args) == 2:
-        key = args[0]
-        db[key] = args[1]
+        db[args[0]] = args[1]
     else:
         key = getAnonymousKey (db)
         db[key] = args[0]
