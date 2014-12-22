@@ -19,9 +19,11 @@
 
 from optionparser import OptionParser, Command, Configuration
 from os.path import expanduser, isfile
+from socket import gethostname
 from whichdb import whichdb
 from os import getcwd
 from glob import glob
+import shutil
 import anydbm
 import sys
 import re
@@ -36,18 +38,27 @@ dbType = ""
 
 # Wrappers for managing the database
 
-def mapDbFileName( filename ):
+def mapDbFileNameForHost( filename ):
+    baseFilename = expanduser( filename + "." + gethostname() )
     fileGlob = expanduser( filename ) + "*"
     for candidateFile in glob( fileGlob ):
         if re.match(".*\.qcddb(\.db)?", candidateFile):
             # If either ~/.qcddb or ~/.qcddb.db has already been created (i.e.
-            # previous executions of qcd), then return it.
+            # previous executions of qcd), then qcd will adapt this name to
+            # look like ~/.qcddb.<machine> or ~/.qcddb.<machine>.db
+            return migrateDbFileNameTo( candidateFile, baseFilename)
+        elif re.match(".*\.qcddb\." + hostname, candidateFile):
+            # If there is a file matching with ~/.qcddb.<current_machine>*, qcd
+            # will use that one.
             return candidateFile
-    return filename
+    # Otherwise, qcd will try to create ~/.qcddb.<current_machine> (or
+    # ~/.qcddb.<current_machine>.db depending on which database anydbm
+    # selects).
+    return baseFilename 
 
 def initialize_database (writeable = False):
     # Get the db file name where qcd info is/will_be stored
-    file = mapDbFileName( qcdCmdParser.getOption("file").value ) 
+    file = mapDbFileNameForHost( qcdCmdParser.getOption("file").value ) 
 
     if not writeable and not isfile(file):
         print >> sys.stderr, "Database is empty! Try adding something!"
@@ -76,6 +87,17 @@ def getAnonymousKey (db):
         if not str(i) in db:
             return str(i)
         i += 1
+
+def migrateDbFileNameTo(originFile, destinationFile):
+    if re.match("^.*(\.db)$", originFile):
+        # Has a db extension, so I'll add it into the destinationFile as well
+        destinationFile += ".db"
+
+    # Moving from originFile to destinationFile
+    shutil.move(originFile, destinationFile)
+
+    # Return result
+    return destinationFile
 
 # Implementation of the commands
 
