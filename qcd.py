@@ -69,9 +69,9 @@ def getAnonymousKey (db):
 
 # Implementation of the commands
 
-def add (parser, args):
+def add (syntaxError, args):
     if len (args) == 0 or len (args) > 2:
-        parser.syntaxError ()
+        syntaxError ()
 
     db = initialize_database (True)
 
@@ -84,16 +84,16 @@ def add (parser, args):
 
     close_database (db)
 
-def save (parser, args):
+def save (syntaxError, args):
     if len (args) > 1:
-        parser.syntaxError ()
+        syntaxError ()
 
     args.append ( getcwd() )
     add (args)
 
-def change (parser, args):
+def change (syntaxError, args):
     if len (args) != 2:
-        parser.syntaxError ()
+        syntaxError ()
 
     db = initialize_database (True)
 
@@ -106,9 +106,9 @@ def change (parser, args):
 
     close_database (db)
 
-def move(parser, args):
+def move(syntaxError, args):
     if len (args) != 2:
-        parser.syntaxError ()
+        syntaxError ()
 
     db = initialize_database (True)
 
@@ -128,9 +128,9 @@ def move(parser, args):
 
     close_database (db)
 
-def delete (parser, args):
+def delete (syntaxError, args):
     if len (args) != 1:
-        parser.syntaxError ()
+        syntaxError ()
 
     db = initialize_database (True)
 
@@ -143,18 +143,18 @@ def delete (parser, args):
 
     close_database (db)
 
-def list (parser, args):
+def list (syntaxError, args):
     if len (args) != 0:
-        parser.syntaxError ()
+        syntaxError ()
 
     db = initialize_database ()
     tabularize.write (sorted (db.iteritems()), writeable = sys.stderr)
     close_database (db)
 
 
-def get (parser, args):
+def get (syntaxError, args):
     if len (args) != 1:
-        parser.syntaxError ()
+        syntaxError ()
 
     db = initialize_database ()
 

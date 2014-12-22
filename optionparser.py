@@ -85,7 +85,7 @@ class Command(Option):
 
     def do (self, args):
         """This will call the callback"""
-        self.callback (self.parser, args)
+        self.callback (self.parser.syntaxError, args)
 
 
 class Configuration(Option):
