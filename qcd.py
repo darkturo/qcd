@@ -99,7 +99,7 @@ def save (syntaxError, args):
         syntaxError ()
 
     args.append ( getcwd() )
-    add (args)
+    add (syntaxError, args)
 
 def change (syntaxError, args):
     if len (args) != 2:
