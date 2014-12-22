@@ -17,24 +17,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from optionparser import OptionParser, Command, Configuration
 from os.path import expanduser, isfile
 from os import getcwd
+from glob import glob
 import anydbm
-from optionparser import OptionParser, Command, Configuration
 import sys
+import re
 
 import tabularize
 
 # Global configuration parameters
 name = "qcd"
-options = dict()
+qcdCmdParser = ()
 default_db_file = "~/." + name + "db"
-
 
 # Wrappers for managing the database
 
+def mapDbFileName( filename ):
+    fileGlob = expanduser( filename ) + "*"
+    for candidateFile in glob( fileGlob ):
+        if re.match(".*\.qcddb(\.db)?", candidateFile):
+            # If either ~/.qcddb or ~/.qcddb.db has already been created (i.e.
+            # previous executions of qcd), then return it.
+            return candidateFile
+    return filename
+
 def initialize_database (writeable = False):
-    file = expanduser ( options["dbfile"].value )
+    file = mapDbFileName( qcdCmdParser.getOption("file").value ) 
 
     if not writeable and not isfile(file):
         print >> sys.stderr, "Database is empty! Try adding something!"
@@ -57,18 +67,11 @@ def getAnonymousKey (db):
             return str(i)
         i += 1
 
-def syntaxError (info = ""):
-    print >> sys.stderr, "Syntax error!" + info
-    parser.usage ()
-    sys.exit (2)
-
-
-
 # Implementation of the commands
 
-def add (args):
+def add (parser, args):
     if len (args) == 0 or len (args) > 2:
-        syntaxError ()
+        parser.syntaxError ()
 
     db = initialize_database (True)
 
@@ -81,16 +84,16 @@ def add (args):
 
     close_database (db)
 
-def save (args):
+def save (parser, args):
     if len (args) > 1:
-        syntaxError ()
+        parser.syntaxError ()
 
     args.append ( getcwd() )
     add (args)
 
-def change (args):
+def change (parser, args):
     if len (args) != 2:
-        syntaxError ()
+        parser.syntaxError ()
 
     db = initialize_database (True)
 
@@ -103,9 +106,9 @@ def change (args):
 
     close_database (db)
 
-def move(args):
+def move(parser, args):
     if len (args) != 2:
-        syntaxError ()
+        parser.syntaxError ()
 
     db = initialize_database (True)
 
@@ -125,9 +128,9 @@ def move(args):
 
     close_database (db)
 
-def delete (args):
+def delete (parser, args):
     if len (args) != 1:
-        syntaxError ()
+        parser.syntaxError ()
 
     db = initialize_database (True)
 
@@ -140,18 +143,18 @@ def delete (args):
 
     close_database (db)
 
-def list (args):
+def list (parser, args):
     if len (args) != 0:
-        syntaxError ()
+        parser.syntaxError ()
 
     db = initialize_database ()
     tabularize.write (sorted (db.iteritems()), writeable = sys.stderr)
     close_database (db)
 
 
-def get (args):
+def get (parser, args):
     if len (args) != 1:
-        syntaxError ()
+        parser.syntaxError ()
 
     db = initialize_database ()
 
@@ -168,44 +171,34 @@ def get (args):
 # Setting up qcd command line interface
 def createQcdCmdLineParser():
     # The command line parser
-    cmdParser = OptionParser (name)
 
     # The options
-    options["dbfile"] = cmdParser.add ( Configuration ("f", "file", 
-                                       "Specifies which database to use",
-                                       default_db_file, syntax = "FILENAME") )
+    cmdParser.addConfiguration("f", "file", "Specifies which database to use",
+                                default_db_file, syntax = "FILENAME") 
     # The commands
-    options["help"] = cmdParser.add ( Command ("h", "help", 
-                                       "Prints this helpful message", 
-                                       lambda args:cmdParser.usage ()) )
+    cmdParser.addCommand("h", "help", "Prints this helpful message", 
+                          lambda _,args:cmdParser.usage ()) 
 
-    options["add"] = cmdParser.add( Command ("a", "add", 
-                                     "Add a new entry into the database", 
-                                     add, syntax = "[LABEL] PATH") )
+    cmdParser.addCommand("a", "add", "Add a new entry into the database", 
+                          add, syntax = "[LABEL] PATH")
 
-    options["save"] = cmdParser.add( Command ("s", "save", 
-                                      "Add current path into the database", 
-                                      save, syntax = "[LABEL]") )
+    cmdParser.addCommand("s", "save", "Add current path into the database", 
+                          save, syntax = "[LABEL]")
 
-    options["move"] = cmdParser.add( Command ("m", "move", 
-                                      "Rename an entry in the database", 
-                                      move, syntax = "FROM TO") )
+    cmdParser.addCommand("m", "move", "Rename an entry in the database", 
+                          move, syntax = "FROM TO")
 
-    options["change"] = cmdParser.add( Command ("c", "change", 
-                                        "Changes the path of an entry in the database", 
-                                        change, syntax = "LABEL NEW_PATH") )
+    cmdParser.addCommand("c", "change", 
+                         "Changes the path of an entry in the database", 
+                          change, syntax = "LABEL NEW_PATH")
 
-    options["delete"] = cmdParser.add( Command ("d", "delete", 
-                                        "Delete an entry from the database", 
-                                        delete, syntax = "LABEL") )
+    cmdParser.addCommand("d", "delete", "Delete an entry from the database", 
+                          delete, syntax = "LABEL") 
 
-    options["list"] = cmdParser.add( Command ("l", "list", 
-                                      "List the entries in the database", 
-                                      list) )
+    cmdParser.addCommand("l", "list", "List the entries in the database", list)
 
-    options["retrieve"] = cmdParser.add( Command ("g", "get", 
-                                          "Retrieve an entry from the database",
-                                          get, True, syntax = "LABEL") )
+    cmdParser.addCommand("g", "get", "Retrieve an entry from the database",
+                          get, True, syntax = "LABEL")
     return cmdParser
 
 
@@ -216,4 +209,4 @@ if ( __name__ == "__main__" ):
 
     # Parse it!
     qcdCmdParser.parse ()
-    
+

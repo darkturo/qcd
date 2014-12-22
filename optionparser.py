@@ -25,6 +25,7 @@ __status__ = "Development"
 import getopt
 import inspect
 import sys
+import re
 
 import tabularize
 
@@ -37,8 +38,6 @@ class Option:
         self.long_option = long_name
         self.description = description
         self.syntax = syntax
-
-
 
     def describe (self):
         """Method for making the option describe itself"""
@@ -57,7 +56,8 @@ class Option:
     def __eq__ (self, other):
         """Overloaded comparison with a string. Will compare for -short_name and --long_name"""
         if type(other) is str:
-            return (other == "-" + self.option) or (other == "--" + self.long_option)
+            other = re.sub("^-*", "", other)
+            return (other == self.option) or (other == self.long_option)
         else:
             return NotImplemented
 
@@ -76,15 +76,16 @@ class Option:
 class Command(Option):
     """An option which when set calls the callback provided."""
 
-    def __init__ (self, option, long_option, description, callback, is_default = False, syntax = ""):
+    def __init__ (self, parser, option, long_option, description, callback, is_default = False, syntax = ""):
         """Contructor asking for names, description and a callback"""
         Option.__init__ (self, option, long_option, description, syntax)
+        self.parser = parser
         self.callback = callback
         self.is_default = is_default
 
     def do (self, args):
         """This will call the callback"""
-        self.callback (args)
+        self.callback (self.parser, args)
 
 
 class Configuration(Option):
@@ -116,10 +117,22 @@ class OptionParser:
         self.options = []
         self.name = name
 
-    def add (self, option):
-        """Add an option to be parsed."""
-        self.options.append (option)
-        return option
+    def addConfiguration (self, option, long_option, description, 
+                          defaultValue, syntax = ""):
+        """Add a configuration option to the cmd parser."""
+        self.options.append ( Configuration (option, long_option, description,
+                                             defaultValue, syntax) )
+
+    def addCommand(self, option, long_option, description, 
+                   callback, isDefault = False, syntax = ""):
+        """Add a command option to the cmd parser."""
+        self.options.append ( Command (self, option, long_option, 
+                                       description, callback, isDefault, 
+                                       syntax) )
+
+    def getOption(self, name):
+        """Return the Option (Command|Configuration) with the specified name"""
+        return self.options[ self.options.index( name ) ]
 
     def has (self, query):
         """Internal method for querying what we have in the options list"""
@@ -173,6 +186,9 @@ class OptionParser:
             print >> sys.stderr, "\nAvailable commands:"
             formater.write (commands, writeable = sys.stderr)
 
+        # Add extra empty line at the end
+        print >> sys.stderr, ""
+
     def parse (self):
         """Do the parsing of arguments passed on the command line"""
         optstr = ""
@@ -219,7 +235,7 @@ class OptionParser:
         self.usage ()
         sys.exit (2)
 
-
-
-
-
+    def syntaxError (self, info = ""):
+        print >> sys.stderr, "Syntax error!" + info
+        self.usage ()
+        sys.exit (2)
