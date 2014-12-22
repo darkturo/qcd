@@ -19,6 +19,7 @@
 
 from optionparser import OptionParser, Command, Configuration
 from os.path import expanduser, isfile
+from whichdb import whichdb
 from os import getcwd
 from glob import glob
 import anydbm
@@ -30,7 +31,8 @@ import tabularize
 # Global configuration parameters
 name = "qcd"
 qcdCmdParser = ()
-default_db_file = "~/." + name + "db"
+defaultDbFile = "~/." + name + "db"
+dbType = ""
 
 # Wrappers for managing the database
 
@@ -44,12 +46,20 @@ def mapDbFileName( filename ):
     return filename
 
 def initialize_database (writeable = False):
+    # Get the db file name where qcd info is/will_be stored
     file = mapDbFileName( qcdCmdParser.getOption("file").value ) 
 
     if not writeable and not isfile(file):
         print >> sys.stderr, "Database is empty! Try adding something!"
         sys.exit (1)
 
+    # changing the global dbType variable, it will contain the infomration
+    # retrieved from whichdb, which basically says which db implementation was
+    # used to create the db file.
+    global dbType 
+    dbType = whichdb(file)
+
+    # Open the db
     if writeable:
         return anydbm.open (file, 'c')
     else:
@@ -148,7 +158,12 @@ def list (syntaxError, args):
         syntaxError ()
 
     db = initialize_database ()
-    tabularize.write (sorted (db.iteritems()), writeable = sys.stderr)
+
+    if dbType == "dumbdb" or dbType == "bsddb185":
+        tabularize.write (sorted ([(key, db[key]) for key in db.keys()]), writeable = sys.stderr)
+    else:
+        tabularize.write (sorted (db.iteritems()), writeable = sys.stderr)
+
     close_database (db)
 
 
@@ -171,10 +186,11 @@ def get (syntaxError, args):
 # Setting up qcd command line interface
 def createQcdCmdLineParser():
     # The command line parser
+    cmdParser = OptionParser (name)
 
     # The options
     cmdParser.addConfiguration("f", "file", "Specifies which database to use",
-                                default_db_file, syntax = "FILENAME") 
+                                defaultDbFile, syntax = "FILENAME") 
     # The commands
     cmdParser.addCommand("h", "help", "Prints this helpful message", 
                           lambda _,args:cmdParser.usage ()) 
