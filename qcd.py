@@ -18,7 +18,7 @@
 
 
 from optionparser import OptionParser, Command, Configuration
-from os.path import expanduser, isfile
+from os.path import expanduser, isfile, basename
 from socket import gethostname
 from whichdb import whichdb
 from os import getcwd
@@ -41,14 +41,15 @@ dbType = ""
 def mapDbFileNameForHost( filename ):
     hostname = gethostname()
     baseFilename = expanduser( filename + "." + hostname )
+    filePattern = ".*" + basename( filename )
     fileGlob = expanduser( filename ) + "*"
     for candidateFile in glob( fileGlob ):
-        if re.match(".*\.qcddb(\.db)?$", candidateFile):
+        if re.match(filePattern + "(\.db)?$", candidateFile):
             # If either ~/.qcddb or ~/.qcddb.db has already been created (i.e.
             # previous executions of qcd), then qcd will adapt this name to
             # look like ~/.qcddb.<machine> or ~/.qcddb.<machine>.db
             return migrateDbFileNameTo( candidateFile, baseFilename)
-        elif re.match(".*\.qcddb\." + hostname, candidateFile):
+        elif re.match(filePattern + "\." + hostname, candidateFile):
             # If there is a file matching with ~/.qcddb.<current_machine>*, qcd
             # will use that one.
             return candidateFile
