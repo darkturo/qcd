@@ -39,10 +39,11 @@ dbType = ""
 # Wrappers for managing the database
 
 def mapDbFileNameForHost( filename ):
-    baseFilename = expanduser( filename + "." + gethostname() )
+    hostname = gethostname()
+    baseFilename = expanduser( filename + "." + hostname )
     fileGlob = expanduser( filename ) + "*"
     for candidateFile in glob( fileGlob ):
-        if re.match(".*\.qcddb(\.db)?", candidateFile):
+        if re.match(".*\.qcddb(\.db)?$", candidateFile):
             # If either ~/.qcddb or ~/.qcddb.db has already been created (i.e.
             # previous executions of qcd), then qcd will adapt this name to
             # look like ~/.qcddb.<machine> or ~/.qcddb.<machine>.db
