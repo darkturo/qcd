@@ -2,7 +2,7 @@
 
 qcd ()
 {
-    installation_path="$HOME/qcd"
+    installation_path=`git rev-parse --show-toplevel`
     script="$installation_path/qcd.py"    
 
     output=`$script $@`

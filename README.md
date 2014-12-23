@@ -9,9 +9,8 @@ Installation
 ------------
 
   1. Move the python scripts into a comfortable place
-  2. Set the path in `sh_hook` to point to said place
-  3. Source `sh_hook` into your shell or add it into your startup script for
-     automatic sourcing
+  2. Source `sh_hook` (or csh_hook if you use tcshell) into your shell or add
+     it into your startup script for automatic sourcing
 
 Usage
 -----
